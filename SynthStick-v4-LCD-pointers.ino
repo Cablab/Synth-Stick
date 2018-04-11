@@ -1,5 +1,4 @@
 #include <SoftwareSerial.h>
-#include <string.h>
 #include <LiquidCrystal.h>
 
 SoftwareSerial mySerial(2, 3); // RX, TX
