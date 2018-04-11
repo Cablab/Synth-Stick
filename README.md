@@ -28,3 +28,9 @@ The code is still compiling, so that's a good sign. Here are a list of the chang
 - Added a button for changing key
 - Added functions to update a given scale's keys
 - Added a function to change key being played
+
+# SynthStick_v4_LCD.ino
+Version 4 with the addition of an LCD screen
+
+- Screen displays relevant information
+- Screen updates each loop in case anything changed
