@@ -34,3 +34,9 @@ Version 4 with the addition of an LCD screen
 
 - Screen displays relevant information
 - Screen updates each loop in case anything changed
+
+# SynthStick-v4-LCD_pointers.ino
+Well, looks like I broke something somewhere in v3 or v4. This is the first file with changes that we think will help with debugging. New changes:
+
+- Now using a pointer to the current scale instead of a separate array that we memcpy with the current array. Seems obvious
+- Took out the #include <string.h> since we don't need it anymore
