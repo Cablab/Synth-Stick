@@ -84,9 +84,7 @@ void setup() {
   updateLCD();
 }
 
-void loop() {
-  updateLCD();
-  
+void loop() {  
   iupPressed = iupVal;
   iupVal = digitalRead(iupPin);
   
@@ -103,19 +101,23 @@ void loop() {
   if (iupVal == HIGH && iupPressed == false) {
     Serial.println(instrument);
     instrumentUp();
+    updateLCD();
   }  
   
   if (idownVal == HIGH && idownPressed == false) {
     Serial.println(instrument);
     instrumentDown();
+    updateLCD();
   }
   
   if (scaleBVal == HIGH && scaleBPressed == false) {
     changeScale();
+    updateLCD();
   } 
   
   if (keyBVal == HIGH && keyBPressed == false) {
     changeKey();
+    updateLCD();
   }
   
   talkMIDI(0xB0, 0, 0x79); //Default bank GM1  
