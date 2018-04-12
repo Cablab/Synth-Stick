@@ -15,3 +15,7 @@ Almost the final version of the code, a few changes were made to make the Synth 
 - Added a button to change key down a step, mapped to pin 1
 - Refactored code, especially in keyUp() and keyDown()
 - More comments
+
+# Still Needed:
+
+- Array of set instruments to avoid infinitely sustaining instruments
