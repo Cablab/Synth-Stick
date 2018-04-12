@@ -50,7 +50,7 @@ void changeScale();
 void instrumentUp();
 void instrumentDown();
 void keyUp();
-void keyDown()
+void keyDown();
 void getMajorNotes();
 void getMinorNotes();
 void getMajorPentNotes();
@@ -58,6 +58,8 @@ void getMinorPentNotes();
 void getChromaticNotes();
 void updateLCD();
 void getButtonStates();
+void getAllNotes();
+void updateCurrentNotes();
 
 //String Arrays for LCD
 String key[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
@@ -214,8 +216,8 @@ void getButtonStates() {
   keyUpPressed = keyUpVal;
   keyUpVal = digitalRead(keyUpPin);
   
-  keyDownPressed= keyDownVal;
-  keyDownVal = digitalRead(KeyDownPin);
+  keyDownPressed = keyDownVal;
+  keyDownVal = digitalRead(keyDownPin);
   
   // Activate button's corresponding method if button
   // state has changed since last loop
