@@ -85,6 +85,7 @@ void setup() {
 }
 
 void loop() {    
+  // Check to see if a button was pressed
   getButtonStates();
   
   talkMIDI(0xB0, 0, 0x79); //Default bank GM1  
@@ -187,8 +188,10 @@ void loop() {
   } 
 }
 
+// Check to see if a button was pressed
 void getButtonStates() {
-    iupPressed = iupVal;
+  // Save last values of buttons, read current values of buttons
+  iupPressed = iupVal;
   iupVal = digitalRead(iupPin);
   
   idownPressed = idownVal;
@@ -200,6 +203,9 @@ void getButtonStates() {
   keyBPressed = keyBVal;
   keyBVal = digitalRead(keyBPin);
   
+  // Activate button's corresponding method if button
+  // state has changed since last loop
+  // Update LCD display
   if (iupVal == HIGH && iupPressed == false) {
     Serial.println(instrument);
     instrumentUp();
@@ -226,7 +232,7 @@ void getButtonStates() {
 // Find the "fret" where the note was played
 enum fret findFret(int softPotADC) {
     if (softPotADC == 0) {
-  return OPEN;
+        return OPEN;
     }
     else if (softPotADC <= 71) {
         return F1;
@@ -320,6 +326,7 @@ void changeScale() {
 }
 
 // Toggle instrument up
+// Instruments 1-128
 void instrumentUp() {
   if (instrument == 128) {
       instrument = 1;
@@ -330,6 +337,7 @@ void instrumentUp() {
 }
 
 // Toggle instrument down
+// Instruments 1 - 128
 void instrumentDown() {
   if (instrument == 1) {
       instrument = 128;
@@ -341,57 +349,68 @@ void instrumentDown() {
 
 // Updates the array of Major notes
 void getMajorNotes() {
-  major[0] = keyRoot;
-  int step = 0;
+  major[0] = keyRoot; // Root scale note
+  int step = 0;       // Place in scale pattern
   
   for (int i = 1; i < 15; i++) {
     step++;
+    
+    // Steps 3 and 7 are 1 note value above previous
     if (step == 3 || step == 7) {
       major[i] = (major[i-1] + 1);
     }
+    // All other steps are 2 note values above previous
     else {
       major[i] = (major[i-1] + 2);
     }
     
+    // Reset once pattern has completed
     if (step == 7) step = 0;
   }
 }
 
 // Updates the array of Major Pentatonic Notes
 void getMajorPentNotes() {
-  majorPent[0] = keyRoot;
-  int step = 0;
+  majorPent[0] = keyRoot; // Root scale note
+  int step = 0;           // Place in scale pattern
   
   for (int i = 1; i < 15; i++) {
     step++;
+    
+    // Steps 3 and 5 are 3 note values above previous
     if (step == 3 || step == 5) {
       majorPent[i] = majorPent[i-1] + 3;
     }
+    // All other steps are 2 note values above previous
     else {
       majorPent[i] = majorPent[i-1] + 2;
     }
-    
+    // Reset once pattern has completed
     if (step == 5) step = 0;
   }
 }
 
 // Updates the array of Minor Pentatonic Notes
 void getMinorPentNotes() {
-  minorPent[0] = keyRoot;
-  int step= 0;
+  minorPent[0] = keyRoot; // Root scale note
+  int step= 0;            // Place in scale pattern
   
   for (int i = 1; i < 15; i++) {
     step++;
+    
+    // Steps 1 and 5 are 3 note values above previous
     if (step == 1 || step == 5) {
       minorPent[i] = minorPent[i-1] + 3;
     }
+    // Steps 2 and 6 are 2 note values above previous
     else if (step == 2 || step == 6) {
       minorPent[i] = minorPent[i-1] + 2;
     }
+    // Steps 3 and 4 are 1 note values above previous
     else {
-      minorPent[i] = minorPent[i-1] + 2;
+      minorPent[i] = minorPent[i-1] + 1;
     }
-    
+    // Reset once pattern has completed
     if (step == 6) step = 0;
   }
 }
