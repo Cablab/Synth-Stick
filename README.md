@@ -4,3 +4,5 @@ Our project has been tested and is currently working, so all previous file versi
 
 - Remapped keyBPin to 9 since 4 doubles as a reset and was giving us issues
 - Refactored code that checks for button presses into separate function
+- Added some needed comments
+- Updated getMinorPentNotes with correct values at steps 3 and 4
