@@ -361,7 +361,6 @@ void instrumentUp() {
 }
 
 // Toggle instrument down
-// Instruments 1 - 128
 void instrumentDown() {
   if (instIndex == 0) {
     int lastInst = ((sizeof(instruments) / sizeof(instruments[0])) - 1);
