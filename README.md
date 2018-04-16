@@ -33,3 +33,4 @@ This should be pretty much it. The only extra thing we've talked about is going 
 - Moved softPotADC to global scale to allow for...
 - Now checking for a value change of 5+ to address machine gun firing between frets in line 117
 - Boolean for value change of 5+ added to list of requirements in line 122 to play a note
+- Line 337 now correctly says == instead of =, hopefully addressing changeScale issues
