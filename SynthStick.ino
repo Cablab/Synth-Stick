@@ -5,12 +5,14 @@ SoftwareSerial mySerial(2, 3); // RX, TX
 
 // Enums
 enum fret { OPEN, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15 };
-enum scale { majorEnum, majPentEnum, minorPentEnum };
+enum scale { majorEnum, minorEnum, majPentEnum, minorPentEnum, chromaticEnum };
 
 // Scale Notes Starting from C
 int major[] = {36, 38, 40, 41, 43, 45, 47, 48, 50, 52, 53, 55, 57, 59, 60};
+int minor[] = {36, 38, 39, 41, 43, 44, 46, 48, 50, 51, 53, 55, 56, 58, 60};
 int majorPent[] = {36, 38, 40, 43, 45, 48, 50, 52, 55, 57, 60, 62, 64, 67, 69};
 int minorPent[] = {36, 39, 41, 42, 43, 46, 48, 51, 53, 54, 55, 58, 60, 63, 65};
+int chromatic[] = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50};
 
 // Current Scale being used
 int *currentNotes;
@@ -22,7 +24,10 @@ byte resetMIDI = 4; //Tied to VS1053 Reset line
 byte ledPin = 13; //MIDI traffic inidicator
 
 // Used to make music!
-int  instrument = 2;
+int instruments[] = {2, 3, 4, 5, 8, 9, 11, 13}; // Holds desired instruments
+int instIndex = 0;
+int  instrument = instruments[instIndex];
+int instCount = 7 ; // zero based
 enum fret currentFret;
 enum scale currentScale;
 
@@ -30,30 +35,39 @@ enum scale currentScale;
 int iupPin = 7; // choose the input pin for inst up push button
 int idownPin = 6; // choose the input pin for inst down push button
 int scaleBPin = 5; // choose the input pin for change scale button
-int keyBPin = 9; // choose the input pin for change key button
+int keyUpPin = 9; // choose the input pin for key up button
+int keyDownPin = 13; // choose the input pin for key down button
 int iupVal = 0;
 int idownVal = 0;
 int scaleBVal = 0;
-int keyBVal = 0;
+int keyUpVal = 0;
+int keyDownVal = 0;
 boolean iupPressed = false;
 boolean idownPressed = false;
 boolean scaleBPressed = false;
-boolean keyBPressed = false;
+boolean keyUpPressed = false;
+boolean keyDownPressed = false;
+//int softPotADC;
 
 // Function Protoypes
 void changeScale();
 void instrumentUp();
 void instrumentDown();
-void changeKey();
+void keyUp();
+void keyDown();
 void getMajorNotes();
+void getMinorNotes();
 void getMajorPentNotes();
 void getMinorPentNotes();
+void getChromaticNotes();
 void updateLCD();
 void getButtonStates();
+void getAllNotes();
+void updateCurrentNotes();
 
 //String Arrays for LCD
 String key[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-String scales[] = {"Major", "MajorPent", "MinorPent"};
+String scales[] = {"Major", "Minor", "MajorPent", "MinorPent", "Chromatic"};
 
 //LCD Pins
 LiquidCrystal lcd(12, 11, 10, 8, 3, 2);
@@ -67,7 +81,8 @@ void setup() {
   pinMode(iupPin, INPUT); //instrument up selector
   pinMode(idownPin, INPUT); // instrument down selector
   pinMode(scaleBPin, INPUT); // change scale selector
-  pinMode(keyBPin, INPUT); // change pin selector
+  pinMode(keyUpPin, INPUT); // key up selector
+  pinMode(keyDownPin, INPUT); // key down selector
   
   //Reset the VS1053
   pinMode(resetMIDI, OUTPUT);
@@ -76,6 +91,8 @@ void setup() {
   digitalWrite(resetMIDI, HIGH);
   delay(100);
   talkMIDI(0xB0, 0x07, 120); //0xB0 is channel message, set channel volume to near max (127)
+  
+  // Setup current scale and key
   currentNotes = major;
   currentScale = majorEnum;
 
@@ -102,7 +119,6 @@ void loop() {
   
   //if pot is pressed, play note
   if (softPotADC > 10 && newNote) {
-    
     if (softPotADC <= 71) {
        //Note on channel 0, some note value (note), middle velocity (0x45):
       noteOn(0, *(currentNotes + 0), 60);
@@ -181,10 +197,6 @@ void loop() {
     else {
       //do nothing
     }    
-    
-    //Turn off the note with a given off/release velocity
-//    noteOff(0, note, 60);
-//    delay(50);
   } 
 }
 
@@ -200,8 +212,11 @@ void getButtonStates() {
   scaleBPressed = scaleBVal;
   scaleBVal = digitalRead(scaleBPin);
   
-  keyBPressed = keyBVal;
-  keyBVal = digitalRead(keyBPin);
+  keyUpPressed = keyUpVal;
+  keyUpVal = digitalRead(keyUpPin);
+  
+  keyDownPressed = keyDownVal;
+  keyDownVal = digitalRead(keyDownPin);
   
   // Activate button's corresponding method if button
   // state has changed since last loop
@@ -223,10 +238,17 @@ void getButtonStates() {
     updateLCD();
   } 
   
-  if (keyBVal == HIGH && keyBPressed == false) {
-    changeKey();
+  if (keyUpVal == HIGH && keyUpPressed == false) {
+    keyUp();
     updateLCD();
   }
+  
+  if (keyDownVal == HIGH && keyDownPressed == false) {
+    keyDown();
+    updateLCD();
+  }
+
+  delay(50);
 }
 
 // Find the "fret" where the note was played
@@ -287,11 +309,13 @@ void updateLCD() {
   lcd.setCursor(0,0);
   lcd.print("Ins: ");
   lcd.setCursor(5,0);
-  lcd.print(instrument);
+  lcd.print(instIndex + 1);
 
   //Key
   lcd.setCursor(9,0);
   lcd.print("Key: ");
+  lcd.setCursor(14,0);
+  lcd.print("  ");
   lcd.setCursor(14,0);
   lcd.print(key[keyRoot-36]);
 
@@ -299,19 +323,19 @@ void updateLCD() {
   lcd.setCursor(0,1);
   lcd.print("S: ");
   lcd.setCursor(4,1);
+  lcd.print("         ");
+  lcd.setCursor(4,1);
   lcd.print(scales[currentScale]);
-
-//Just in case, but probably won't need it since volume will be analog
-//  //Volume
-//  lcd.setCursor(8,1);
-//  lcd.print("vol: ");
-//  lcd.setCursor(14,1);
-//  lcd.print("11");
 }
 
 // Change the current scale of notes being used
 void changeScale() {
+  Serial.println(currentScale);
   if (currentScale == majorEnum) {
+    currentNotes = minor;
+    currentScale = minorEnum;
+  }
+  else if (currentScale == minorEnum) {
     currentNotes = majorPent;
     currentScale = majPentEnum;
   }
@@ -319,32 +343,66 @@ void changeScale() {
     currentNotes = minorPent;
     currentScale = minorPentEnum;
   }
-  else {  // if currentScale == minorPentEnum
+  else if (currentScale == minorPentEnum) {
+    currentNotes = chromatic;
+    currentScale = chromaticEnum;
+  }
+  else {  // if currentScale == chromaticEnum
     currentNotes = major;
     currentScale = majorEnum;
   }
 }
 
 // Toggle instrument up
-// Instruments 1-128
 void instrumentUp() {
-  if (instrument == 128) {
-      instrument = 1;
-  }
-  else {
-      instrument += 1;
-  }
+  instIndex++;
+  if (instIndex > instCount) instIndex = 0;
+  
+  instrument = instruments[instIndex];
 }
 
 // Toggle instrument down
-// Instruments 1 - 128
 void instrumentDown() {
-  if (instrument == 1) {
-      instrument = 128;
-  } 
-  else {
-      instrument -= 1;
+  instIndex--;
+  if (instIndex < 0) instIndex = instCount;
+ 
+  instrument = instruments[instIndex];
+}
+
+// Moves key up 1 note
+void keyUp() {
+  // Update root note
+  if (keyRoot == 47) {
+    keyRoot = 36;
   }
+  else {
+    keyRoot++;
+  }
+  Serial.println(keyRoot);
+  
+  // Change all scale's keys
+  getAllNotes();
+  
+  // Update current scale to be copy of current scale in new key
+  updateCurrentNotes();
+}
+
+// Moves key down 1 note
+void keyDown() {
+  // Update root note
+  if (keyRoot == 36) {
+    keyRoot = 47;
+  }
+  else {
+    keyRoot--;
+  }
+  Serial.println(keyRoot);
+  
+  // Change all scale's keys
+  getAllNotes();
+  
+  // Update current scale to be copy of current scale in new key
+  updateCurrentNotes();
 }
 
 // Updates the array of Major notes
@@ -364,6 +422,26 @@ void getMajorNotes() {
       major[i] = (major[i-1] + 2);
     }
     
+    // Reset once pattern has completed
+    if (step == 7) step = 0;
+  }
+}
+
+void getMinorNotes() {
+  minor[0] = keyRoot; // Root scale note
+  int step = 0;           // Place in scale pattern
+  
+  for (int i = 1; i < 15; i++) {
+    step++;
+    
+    // Steps 2 and 5 are 1 note values above previous
+    if (step == 2 || step == 5) {
+      minor[i] = minor[i-1] + 1;
+    }
+    // All other steps are 2 note values above previous
+    else {
+      minor[i] = minor[i-1] + 2;
+    }
     // Reset once pattern has completed
     if (step == 7) step = 0;
   }
@@ -415,31 +493,40 @@ void getMinorPentNotes() {
   }
 }
 
-// Changes the key
-void changeKey() {
-  // Update root note
-  if (keyRoot == 47) {
-    keyRoot = 36;
-  }
-  else {
-    keyRoot++;
-  }
-  Serial.println(keyRoot);
+// Updates the array of Chromatic notes
+void getChromaticNotes() {
+  chromatic[0] = keyRoot; // Root scale note
   
-  // Change all scale's keys
+  for (int i = 1; i < 15; i++) {
+    chromatic[i] = chromatic[i-1] + 1;
+  }
+}
+
+// Change key of all scales
+void getAllNotes() {
   getMajorNotes();
+  getMinorNotes();
   getMajorPentNotes();
   getMinorPentNotes();
-  
-  // Update current scale to be copy of current scale in new key
+  getChromaticNotes();
+}
+
+// Update current notes after key change
+void updateCurrentNotes() {
   if (currentScale == majorEnum) {
     currentNotes = major;
+  }
+  else if (currentScale == minorEnum) {
+    currentNotes = minor;
   }
   else if (currentScale == majPentEnum) {
     currentNotes = majorPent;
   }
-  else { // currentScale == minorPentEnum
+  else if (currentScale = minorPentEnum) {
     currentNotes = minorPent;
+  }
+  else { // currentScale == chromatic
+    currentNotes = chromatic;
   }
 }
 
